@@ -258,7 +258,12 @@ app.post("/chat-web", (req, res) => {
 });
 
 app.post("/webhook", (req, res) => { res.sendStatus(200); });
-
+// --- RUTA SECRETA PARA ADMINISTRACIÓN ---
+// La doctora entrará aquí para ver quién ha pedido hora
+app.get("/admin/ver-citas", (req, res) => {
+  const db = leerBaseDeDatos();
+  res.json(db);
+});
 app.listen(PORT, () => {
   console.log(`🚀 Bot PRO (6 Pasos + Cancelación) corriendo en http://localhost:${PORT}`);
 });
