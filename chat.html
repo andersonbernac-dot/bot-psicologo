@@ -83,7 +83,7 @@
 
         try {
             // Petición al servidor local
-            const response = await fetch('http://localhost:3000/chat-web', {
+            const response = await fetch('https://bot-psico-anderson.onrender.com/chat-web', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ mensaje: texto, telefono: miIdUsuario }) 
