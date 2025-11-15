@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Psicóloga - Demo</title>
+    <style>
+        /* ESTILOS (DISEÑO VISUAL) */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #d1d7db; margin: 0; display: flex; justify-content: center; height: 100vh; }
+        .chat-container { width: 100%; max-width: 450px; background: #efe7dd; display: flex; flex-direction: column; box-shadow: 0 4px 15px rgba(0,0,0,0.2); height: 100%; }
+        
+        /* Cabecera verde */
+        .header { background-color: #008069; color: white; padding: 15px; display: flex; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.2); z-index: 10;}
+        .header img { width: 40px; height: 40px; border-radius: 50%; margin-right: 15px; background: white; padding: 2px; }
+        .header-info h4 { margin: 0; font-size: 16px; font-weight: 600; }
+        .header-info p { margin: 0; font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+        /* Área de mensajes */
+        .chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png'); /* Fondo WhatsApp opcional */ background-repeat: repeat; }
+        
+        .message { max-width: 80%; padding: 8px 12px; border-radius: 8px; font-size: 14.2px; line-height: 1.4; position: relative; word-wrap: break-word; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+        .user { align-self: flex-end; background-color: #d9fdd3; border-radius: 8px 0 8px 8px; }
+        .bot { align-self: flex-start; background-color: #fff; border-radius: 0 8px 8px 8px; }
+        
+        /* Input y botón */
+        .input-area { background: #f0f2f5; padding: 10px 15px; display: flex; gap: 10px; align-items: center; }
+        input { flex: 1; padding: 12px; border-radius: 8px; border: none; outline: none; font-size: 15px; background: white; }
+        button { background: transparent; color: #54656f; border: none; cursor: pointer; font-size: 20px; padding: 5px; transition: color 0.2s; }
+        button:hover { color: #008069; }
+        
+        /* Animación "Escribiendo..." */
+        .typing { font-style: italic; color: #667781; font-size: 12px; margin-left: 20px; margin-bottom: 5px; display: none; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/3209/3209992.png" alt="Psi">
+        <div class="header-info">
+            <h4>Consulta Psicóloga</h4>
+            <p>En línea</p>
+        </div>
+    </div>
+
+    <div class="chat-box" id="chatBox">
+        </div>
+    <div class="typing" id="typingIndicator">Escribiendo...</div>
+
+    <div class="input-area">
+        <input type="text" id="msgInput" placeholder="Escribe un mensaje..." autocomplete="off" onkeypress="handleEnter(event)">
+        <button onclick="enviarMensaje()">➤</button>
+    </div>
+</div>
+
+<script>
+    // 1. Gestión de Identidad (para que no se reinicie al recargar)
+    let miIdUsuario = localStorage.getItem('userId');
+    if (!miIdUsuario) {
+        miIdUsuario = "user_" + Math.floor(Math.random() * 10000);
+        localStorage.setItem('userId', miIdUsuario);
+    }
+
+    // 2. Función principal para enviar y recibir
+    async function enviarMensaje(textoManual = null) {
+        const input = document.getElementById('msgInput');
+        const chatBox = document.getElementById('chatBox');
+        
+        // Si es automático usa textoManual, si no, lee lo que escribiste
+        const texto = textoManual || input.value;
+        
+        if (!texto) return; // No enviar vacíos
+
+        // Solo mostrar la burbuja verde si la escribió el humano (no el auto-saludo)
+        if (!textoManual) {
+            chatBox.innerHTML += `<div class="message user">${texto}</div>`;
+            input.value = ''; // Limpiar input
+            chatBox.scrollTop = chatBox.scrollHeight; // Bajar scroll
+        }
+
+        // Mostrar "Escribiendo..."
+        document.getElementById('typingIndicator').style.display = 'block';
+
+        try {
+            // Petición al servidor local
+            const response = await fetch('http://localhost:3000/chat-web', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mensaje: texto, telefono: miIdUsuario }) 
+            });
+            const data = await response.json();
+
+            // Ocultar "Escribiendo..." y mostrar respuesta
+            document.getElementById('typingIndicator').style.display = 'none';
+            
+            // Convertir saltos de línea a HTML
+            const botHTML = data.respuesta.replace(/\n/g, '<br>');
+            
+            chatBox.innerHTML += `<div class="message bot">${botHTML}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('typingIndicator').style.display = 'none';
+            chatBox.innerHTML += `<div class="message bot" style="color:red; background:#ffdcdc">⚠️ Error: Asegúrate de tener 'node index.js' corriendo.</div>`;
+        }
+    }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') enviarMensaje();
+    }
+
+    // 3. AUTO-ARRANQUE: Al cargar la página, enviar "Hola" invisible
+    window.onload = function() {
+        console.log("Página cargada. Iniciando chat...");
+        enviarMensaje("Hola"); 
+    };
+</script>
+
+</body>
+</html>
